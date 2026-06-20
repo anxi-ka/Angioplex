@@ -7,12 +7,12 @@ ANGIOPLEX is a deep learning-based clinical decision support tool that analyzes 
 
 ## Features
 
-- **Dual-model inference** — EfficientNet CNN (regression) and CNN+CBAM+Regression (dual-output)
+- **Dual-model inference** : EfficientNet CNN (regression) and CNN+CBAM+Regression (dual-output)
 - **Stenosis percentage prediction** from uploaded angiography images
 - **Severity classification** across five levels: Minimal, Mild, Moderate, Severe, Critical
-- **Treatment recommendation engine** — suggests intervention type, medication intensity, urgency level, and follow-up schedule
-- **Exploratory Data Analysis (EDA) tab** — visualizes dataset distributions and statistics
-- **Model comparison tab** — side-by-side architecture overview and training performance graphs
+- **Treatment recommendation engine** : suggests intervention type, medication intensity, urgency level, and follow-up schedule
+- **Exploratory Data Analysis (EDA) tab** : visualizes dataset distributions and statistics
+- **Model comparison tab** : side-by-side architecture overview and training performance graphs
 
 ---
 
