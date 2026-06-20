@@ -43,13 +43,13 @@ See **[model_links.txt](./model_links.txt)** for the download links.
 
 ## Architecture Overview
 
-### Model 1 — EfficientNet CNN
+### Model 1 : EfficientNet CNN
 - Base: EfficientNetB0 pre-trained on ImageNet
 - Head: Single regression output → stenosis percentage (0–100%)
 - Input: 224×224×3 grayscale angiography image
 - Parameters: ~5.3M
 
-### Model 2 — CNN + CBAM + Regression
+### Model 2 : CNN + CBAM + Regression
 - Base: Custom 4-block CNN (64→128→256→512 filters)
 - Attention: CBAM modules (channel + spatial) after each block
 - Head: Dual output — regression (stenosis %) + classification (severity class)
