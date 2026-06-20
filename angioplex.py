@@ -59,10 +59,10 @@ class ReduceMaxLayer(Layer):
 
 
 # --------- CONFIG ---------
-BASE_PATH = r"C:\Users\Anshika\Desktop\maam's lab\test_02"
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 GRAPH_PATH = os.path.join(BASE_PATH, "graphs")
-CSV_TRAIN = os.path.join(BASE_PATH, "augmented_data/train/train.csv")
-CSV_VAL = os.path.join(BASE_PATH, "augmented_data/val/val.csv")
+CSV_TRAIN = os.path.join(BASE_PATH, "augmented_data", "train", "train.csv")
+CSV_VAL = os.path.join(BASE_PATH, "augmented_data", "val", "val.csv")
 
 MODEL_CNN = os.path.join(BASE_PATH, "efficientnet_stenosis_model.h5")
 MODEL_HYBRID = os.path.join(BASE_PATH, "hybrid_cnn_cbam_stenosis_model_lambda_free.h5")
@@ -633,7 +633,6 @@ with tabs[2]:
         - Dual output heads (regression + classification)
         
         **Note:**
-        - Currently using architecture demonstration
         - Trained model has Lambda layer compatibility issues
         - For reliable predictions, use EfficientNet CNN
         
@@ -652,6 +651,10 @@ with tabs[2]:
     cbam_acc_path = os.path.join(GRAPH_PATH, "cnn_cbam_accuracy_curve.png")
     cbam_loss_path = os.path.join(GRAPH_PATH, "cnn_cbam_loss_curve.png")
     cbam_mae_path = os.path.join(GRAPH_PATH, "cnn_cbam_mae_curve.png")
+    cnn_cm_path = os.path.join(GRAPH_PATH, "CNN Confusion Matrix.jpg")
+    cnn_roc_path = os.path.join(GRAPH_PATH, "CNN AUC-ROC Curve.jpg")
+    cbam_cm_path = os.path.join(GRAPH_PATH, "CNN+CBAM Confusion Matrix.jpg")
+    cbam_roc_path = os.path.join(GRAPH_PATH, "CNN+CBAM AUC-ROC Curve.jpg")
     
     # CNN Model graphs
     if os.path.exists(cnn_acc_path) and os.path.exists(cnn_loss_path):
@@ -662,6 +665,23 @@ with tabs[2]:
         with col2:
             st.image(Image.open(cnn_loss_path), caption="EfficientNet CNN - Training Loss")
     
+    # EfficientNet Evaluation Metrics
+    if os.path.exists(cnn_cm_path) and os.path.exists(cnn_roc_path):
+        st.markdown("#### 🎯 EfficientNet CNN Evaluation Results")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(
+                Image.open(cnn_cm_path),
+                caption="EfficientNet CNN - Confusion Matrix",
+                use_container_width=True
+            )
+        with col2:
+            st.image(
+                Image.open(cnn_roc_path),
+                caption="EfficientNet CNN - ROC Curve",
+                use_container_width=True
+            )
+    
     # CNN+CBAM Model graphs
     if os.path.exists(cbam_acc_path) and os.path.exists(cbam_loss_path):
         st.markdown("#### 📈 CNN+CBAM+Regression Training Results")
@@ -670,6 +690,22 @@ with tabs[2]:
             st.image(Image.open(cbam_acc_path), caption="CNN+CBAM - Training Accuracy")
         with col2:
             st.image(Image.open(cbam_loss_path), caption="CNN+CBAM - Training Loss")
+    # CNN+CBAM Evaluation Metrics
+    if os.path.exists(cbam_cm_path) and os.path.exists(cbam_roc_path):
+        st.markdown("#### 🎯 CNN+CBAM Evaluation Results")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(
+                Image.open(cbam_cm_path),
+                caption="CNN+CBAM - Confusion Matrix",
+                use_container_width=True
+            )
+        with col2:
+            st.image(
+                Image.open(cbam_roc_path),
+                caption="CNN+CBAM - ROC Curve",
+                use_container_width=True
+            )
     
     # MAE graph for CBAM model
     if os.path.exists(cbam_mae_path):
@@ -677,7 +713,17 @@ with tabs[2]:
         st.image(Image.open(cbam_mae_path), caption="CNN+CBAM - Mean Absolute Error Over Training")
     
     # If no graphs found
-    if not any(os.path.exists(path) for path in [cnn_acc_path, cnn_loss_path, cbam_acc_path, cbam_loss_path, cbam_mae_path]):
+    if not any(os.path.exists(path) for path in [
+        cnn_acc_path,
+        cnn_loss_path,
+        cbam_acc_path,
+        cbam_loss_path,
+        cbam_mae_path,
+        cnn_cm_path,
+        cnn_roc_path,
+        cbam_cm_path,
+        cbam_roc_path
+    ]):
         st.info("📊 Training history graphs not found. Please ensure your graph files are properly named and located in the graphs folder.")
 
 # Sidebar with additional information
@@ -692,8 +738,7 @@ with st.sidebar:
     ✅ Production-ready
     
     **CNN+CBAM+Regression:**
-    Architecture demonstration only
-    May give inconsistent results
+    ✅ Advanced feature extraction
     ✅ Shows advanced attention features
     """)
     
