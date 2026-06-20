@@ -1,0 +1,11 @@
+MODEL WEIGHTS — Download before running the app
+================================================
+
+These files are too large for GitHub (25MB limit).
+Download both and place them in the same folder as angioplex.py.
+
+1. efficientnet_stenosis_model.h5 (16 MB)
+   Link: https://drive.google.com/file/d/16GmWqH3Wy74AR_oSdYAqRNaaI49TEspg/view?usp=drive_link
+
+2. hybrid_cnn_cbam_stenosis_model_lambda_free.h5 (62 MB)
+   Link: https://drive.google.com/file/d/1ZSgXXKVkGhgpBqnrDMG37_TvDOLvGokm/view?usp=drive_link
