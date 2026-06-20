@@ -23,9 +23,7 @@ Angioplex/
 ├── angioplex.py                  # Main Streamlit dashboard
 ├── test_02.ipynb                 # Training notebook (EDA, model training, evaluation)
 ├── requirements.txt              # Python dependencies
-├── model_links.txt               # Google Drive links for .h5 model weight files
-├── graph_statistics.png          # Dataset statistics visualization
-└── graphs/                       # Training performance plots (accuracy, loss, MAE)
+└── model_links.txt               # Google Drive links for .h5 model weight files 
 ```
 
 ---
