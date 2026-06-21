@@ -301,9 +301,9 @@ with tabs[1]:
         st.stop()
     selected_model = st.radio("**Select Model for Prediction:**", available_models)
     if selected_model == "EfficientNet CNN":
-        st.info("🤖 **EfficientNet CNN**: Pre-trained model — **Recommended for reliable predictions**")
+        st.info("🤖 **EfficientNet CNN**: Pre-trained model — Recommended for reliable predictions")
     else:
-        st.info("🧠 **CNN+CBAM+Regression**: Attention-based model with dual output")
+        st.info("🧠 **CNN+CBAM+Regression**: Recommended for Attention-based model with dual output")
     uploaded_file = st.file_uploader("Upload Angiography Image", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         col1, col2 = st.columns([1, 2])
