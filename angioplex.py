@@ -2,7 +2,6 @@ import os
 import streamlit as st
 import pandas as pd
 import numpy as np
-import sys
 import tensorflow as tf
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import (
@@ -29,19 +28,11 @@ MODEL_HYBRID_PATH = os.path.join(BASE_PATH, "hybrid_cnn_cbam_stenosis_model_lamb
 
 if not os.path.exists(MODEL_CNN_PATH):
     with st.spinner("Downloading EfficientNet CNN model... (this may take a minute)"):
-        gdown.download(
-            id="16GmWqH3Wy74AR_oSdYAqRNaaI49TEspg",
-            output=MODEL_CNN_PATH,
-            quiet=False
-        )
+        gdown.download(id="16GmWqH3Wy74AR_oSdYAqRNaaI49TEspg", output=MODEL_CNN_PATH, quiet=False)
 
 if not os.path.exists(MODEL_HYBRID_PATH):
     with st.spinner("Downloading CNN+CBAM model... (this may take a minute)"):
-        gdown.download(
-            id="1ZSgXXKVkGhgpBqnrDMG37_TvDOLvGokm",
-            output=MODEL_HYBRID_PATH,
-            quiet=False
-        )
+        gdown.download(id="1ZSgXXKVkGhgpBqnrDMG37_TvDOLvGokm", output=MODEL_HYBRID_PATH, quiet=False)
 
 # ===== CUSTOM LAYERS FOR TRAINED CBAM MODEL =====
 
@@ -247,6 +238,7 @@ if st.checkbox("Show Model Architectures"):
 
 tabs = st.tabs(["📊 EDA (Exploratory Data Analysis)", "🔍 Stenosis Prediction", "📈 Model Information"])
 
+# --------- TAB 1: EDA ---------
 with tabs[0]:
     st.subheader("📊 Exploratory Data Analysis (EDA)")
     st.markdown("**Understanding the dataset used for training both models**")
@@ -290,6 +282,7 @@ with tabs[0]:
         with col7: st.metric("Std Deviation", f"{df_lookup['stenosis_percentage'].std():.1f}%")
         with col8: st.metric("Median Stenosis %", f"{df_lookup['stenosis_percentage'].median():.1f}%")
 
+# --------- TAB 2: PREDICTION ---------
 with tabs[1]:
     st.subheader("🔍 Stenosis Prediction & Analysis")
     st.markdown("**Choose your preferred model and upload an angiography image for analysis**")
@@ -297,13 +290,13 @@ with tabs[1]:
     if cnn_model is not None: available_models.append("EfficientNet CNN")
     if hybrid_model is not None: available_models.append("CNN + CBAM + Regression")
     if not available_models:
-        st.error("❌ No models are available for prediction.")
+        st.error("❌ No models are available for prediction. Please check your model files.")
         st.stop()
-    selected_model = st.radio("**Select Model for Prediction:**", available_models)
+    selected_model = st.radio("**Select Model for Prediction:**", available_models, help="Choose between EfficientNet CNN (trained) or CNN+CBAM+Regression")
     if selected_model == "EfficientNet CNN":
-        st.info("🤖 **EfficientNet CNN**: Pre-trained model — Recommended for reliable predictions")
+        st.info("🤖 **EfficientNet CNN**: Pre-trained model optimized for medical image analysis - for reliable predictions")
     else:
-        st.info("🧠 **CNN+CBAM+Regression**: Recommended for Attention-based model with dual output")
+        st.info("🧠 **CNN+CBAM+Regression**: Recommended Trained attention-based model with CBAM modules")
     uploaded_file = st.file_uploader("Upload Angiography Image", type=["jpg", "jpeg", "png"])
     if uploaded_file is not None:
         col1, col2 = st.columns([1, 2])
@@ -345,72 +338,146 @@ with tabs[1]:
                             st.markdown(f"**🏃 Lifestyle Changes:** {treatment['lifestyle_summary']}")
                             st.markdown(f"**🔬 Lab Monitoring:** {treatment['lab_monitoring_summary']}")
                     st.markdown("---")
-                    st.error("⚠️ **MEDICAL DISCLAIMER:** This AI analysis is for educational and research purposes only. Always consult qualified healthcare professionals.")
+                    st.error("⚠️ **IMPORTANT MEDICAL DISCLAIMER:** This AI analysis is for educational and research purposes only. It should NOT be used as a substitute for professional medical diagnosis or treatment. Always consult qualified healthcare professionals for medical decisions.")
                 else:
                     st.error("❌ Failed to analyze the image. Please ensure the image is clear and try again.")
+                    st.info("💡 **Tips:** Make sure the image is a clear angiography scan with good contrast.")
 
+# --------- TAB 3: MODEL INFO ---------
 with tabs[2]:
     st.subheader("📈 Model Information & Comparison")
     st.write("### Model Comparison")
-    comparison_df = pd.DataFrame({
+    comparison_data = {
         "Feature": ["Architecture Base", "Attention Mechanism", "Output Type", "Training Status", "Best Use Case", "Computational Complexity"],
         "EfficientNet CNN": ["EfficientNetB0 (Pre-trained)", "None", "Single regression output", "Fully trained", "Fast, reliable predictions", "Low"],
         "CNN + CBAM + Regression": ["Custom CNN with CBAM", "Channel + Spatial Attention", "Dual output (regression + classification)", "Fully Trained", "Advanced feature extraction", "High"]
-    })
+    }
+    comparison_df = pd.DataFrame(comparison_data)
     st.table(comparison_df)
+
     col1, col2 = st.columns(2)
     with col1:
         st.write("### 🔵 EfficientNet CNN Model")
         st.write("""
-        - Based on EfficientNetB0 (ImageNet pre-trained)
-        - Fine-tuned for coronary stenosis regression
-        - Input: 224×224×3 | Output: stenosis % (0–100%)
-        - Parameters: ~5.3M
+        **Architecture Features:**
+        - Based on EfficientNetB0 architecture
+        - Pre-trained on ImageNet, fine-tuned for stenosis
+        - Compound scaling for optimal efficiency
+        - Single regression head for stenosis percentage
+
+        **Technical Specs:**
+        - Input: 224×224×3 Gray Scale images
+        - Output: Single stenosis percentage (0-100%)
+        - Parameters: ~5.3M (EfficientNetB0 base)
         """)
     with col2:
         st.write("### 🧠 CNN + CBAM + Regression Model")
         st.write("""
-        - Custom CNN with 4 convolutional blocks (64→512 filters)
-        - CBAM: Channel + Spatial attention after each block
-        - Input: 224×224×3 | Output: stenosis % + severity class
-        - Dual-head architecture
-        """)
-    st.write("### Training Performance")
-    graph_files = {
-        "EfficientNet CNN - Accuracy": os.path.join(GRAPH_PATH, "cnn_accuracy_curve.png"),
-        "EfficientNet CNN - Loss": os.path.join(GRAPH_PATH, "cnn_loss_curve.png"),
-        "CNN+CBAM - Accuracy": os.path.join(GRAPH_PATH, "cnn_cbam_accuracy_curve.png"),
-        "CNN+CBAM - Loss": os.path.join(GRAPH_PATH, "cnn_cbam_loss_curve.png"),
-        "CNN+CBAM - MAE": os.path.join(GRAPH_PATH, "cnn_cbam_mae_curve.png"),
-    }
-    found_any = False
-    for caption, path in graph_files.items():
-        if os.path.exists(path):
-            st.image(Image.open(path), caption=caption)
-            found_any = True
-    if not found_any:
-        st.info("📊 Training history graphs not found in the graphs/ folder.")
+        **Architecture Features:**
+        - Custom CNN with 4 convolutional blocks
+        - CBAM (Convolutional Block Attention Module)
+        - Channel attention for feature importance
+        - Spatial attention for location focus
+        - Dual output heads (regression + classification)
 
+        **Technical Specs:**
+        - Input: 224×224×3 Gray Scale images
+        - Output: Stenosis % + Severity classification
+        - Attention: Channel + Spatial CBAM blocks
+        """)
+
+    # ---- ALL GRAPH PATHS (merged from both versions) ----
+    st.write("### Training Performance Comparison")
+
+    cnn_acc_path   = os.path.join(GRAPH_PATH, "cnn_accuracy_curve.png")
+    cnn_loss_path  = os.path.join(GRAPH_PATH, "cnn_loss_curve.png")
+    cnn_cm_path    = os.path.join(GRAPH_PATH, "CNN Confusion Matrix.jpg")
+    cnn_roc_path   = os.path.join(GRAPH_PATH, "CNN AUC-ROC Curve.jpg")
+
+    cbam_acc_path  = os.path.join(GRAPH_PATH, "cnn_cbam_accuracy_curve.png")
+    cbam_loss_path = os.path.join(GRAPH_PATH, "cnn_cbam_loss_curve.png")
+    cbam_mae_path  = os.path.join(GRAPH_PATH, "cnn_cbam_mae_curve.png")
+    cbam_cm_path   = os.path.join(GRAPH_PATH, "CNN+CBAM Confusion Matrix.jpg")
+    cbam_roc_path  = os.path.join(GRAPH_PATH, "CNN+CBAM AUC-ROC Curve.jpg")
+
+    all_paths = [cnn_acc_path, cnn_loss_path, cnn_cm_path, cnn_roc_path,
+                 cbam_acc_path, cbam_loss_path, cbam_mae_path, cbam_cm_path, cbam_roc_path]
+
+    # EfficientNet CNN training curves
+    if os.path.exists(cnn_acc_path) or os.path.exists(cnn_loss_path):
+        st.markdown("#### 📈 EfficientNet CNN Training Results")
+        col1, col2 = st.columns(2)
+        with col1:
+            if os.path.exists(cnn_acc_path):
+                st.image(Image.open(cnn_acc_path), caption="EfficientNet CNN - Training Accuracy")
+        with col2:
+            if os.path.exists(cnn_loss_path):
+                st.image(Image.open(cnn_loss_path), caption="EfficientNet CNN - Training Loss")
+
+    # EfficientNet CNN evaluation
+    if os.path.exists(cnn_cm_path) or os.path.exists(cnn_roc_path):
+        st.markdown("#### 🎯 EfficientNet CNN Evaluation Results")
+        col1, col2 = st.columns(2)
+        with col1:
+            if os.path.exists(cnn_cm_path):
+                st.image(Image.open(cnn_cm_path), caption="EfficientNet CNN - Confusion Matrix", use_container_width=True)
+        with col2:
+            if os.path.exists(cnn_roc_path):
+                st.image(Image.open(cnn_roc_path), caption="EfficientNet CNN - AUC-ROC Curve", use_container_width=True)
+
+    # CNN+CBAM training curves
+    if os.path.exists(cbam_acc_path) or os.path.exists(cbam_loss_path):
+        st.markdown("#### 📈 CNN+CBAM+Regression Training Results")
+        col1, col2 = st.columns(2)
+        with col1:
+            if os.path.exists(cbam_acc_path):
+                st.image(Image.open(cbam_acc_path), caption="CNN+CBAM - Training Accuracy")
+        with col2:
+            if os.path.exists(cbam_loss_path):
+                st.image(Image.open(cbam_loss_path), caption="CNN+CBAM - Training Loss")
+
+    # CNN+CBAM evaluation
+    if os.path.exists(cbam_cm_path) or os.path.exists(cbam_roc_path):
+        st.markdown("#### 🎯 CNN+CBAM Evaluation Results")
+        col1, col2 = st.columns(2)
+        with col1:
+            if os.path.exists(cbam_cm_path):
+                st.image(Image.open(cbam_cm_path), caption="CNN+CBAM - Confusion Matrix", use_container_width=True)
+        with col2:
+            if os.path.exists(cbam_roc_path):
+                st.image(Image.open(cbam_roc_path), caption="CNN+CBAM - AUC-ROC Curve", use_container_width=True)
+
+    # MAE curve
+    if os.path.exists(cbam_mae_path):
+        st.markdown("#### 📈 CNN+CBAM Mean Absolute Error")
+        st.image(Image.open(cbam_mae_path), caption="CNN+CBAM - Mean Absolute Error Over Training")
+
+    if not any(os.path.exists(p) for p in all_paths):
+        st.info("📊 Training history graphs not found. Please ensure your graph files are in the graphs/ folder.")
+
+# --------- SIDEBAR ---------
 with st.sidebar:
     st.header("🔍 Quick Model Guide")
+    st.write("### Model Selection Tips:")
     st.info("""
     **EfficientNet CNN:**
-    ✅ Reliable predictions
+    ✅ Use for reliable predictions
     ✅ Faster processing
-    
+    ✅ Production-ready
+
     **CNN+CBAM+Regression:**
-    ✅ Advanced attention features
-    ✅ Dual output (% + class)
+    ✅ Advanced feature extraction
+    ✅ Shows advanced attention features
     """)
     st.write("### Severity Levels:")
     st.success("🟢 **Minimal:** < 30%")
-    st.info("🔵 **Mild:** 30–50%")
-    st.warning("🟡 **Moderate:** 50–70%")
-    st.error("🟠 **Severe:** 70–85%")
+    st.info("🔵 **Mild:** 30-50%")
+    st.warning("🟡 **Moderate:** 50-70%")
+    st.error("🟠 **Severe:** 70-85%")
     st.error("🔴 **Critical:** > 85%")
+    st.write("### Dataset Info:")
     if not df_lookup.empty:
-        st.write("### Dataset Info:")
         st.metric("Training Samples", len(df_lookup))
         st.metric("Avg Stenosis", f"{df_lookup['stenosis_percentage'].mean():.1f}%")
     st.markdown("---")
-    st.caption("⚠️ For educational use only.")    
+    st.caption("⚠️ For educational use only. Consult medical professionals for diagnosis.")
