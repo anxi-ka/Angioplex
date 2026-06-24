@@ -34,7 +34,7 @@ if not os.path.exists(MODEL_HYBRID_PATH):
     with st.spinner("Downloading CNN+CBAM model... (this may take a minute)"):
         gdown.download(id="1ZSgXXKVkGhgpBqnrDMG37_TvDOLvGokm", output=MODEL_HYBRID_PATH, quiet=False)
 
-# ===== CUSTOM LAYERS FOR TRAINED CBAM MODEL =====
+# ===== CUSTOM LAYERS =====
 
 class ReduceMeanLayer(Layer):
     def __init__(self, axis=3, keepdims=True, **kwargs):
@@ -142,7 +142,7 @@ def load_models():
     try:
         if os.path.exists(MODEL_CNN):
             cnn_model = load_model(MODEL_CNN, compile=False)
-            st.success("✅ EfficientNet CNN model loaded successfully!")
+            st.success("EfficientNet CNN model loaded successfully.")
         else:
             st.warning(f"EfficientNet CNN model file not found: {MODEL_CNN}")
     except Exception as e:
@@ -150,7 +150,7 @@ def load_models():
     try:
         if os.path.exists(MODEL_HYBRID):
             hybrid_model = load_model(MODEL_HYBRID, compile=False, custom_objects={"ReduceMeanLayer": ReduceMeanLayer, "ReduceMaxLayer": ReduceMaxLayer})
-            st.success("✅ CNN+CBAM+Regression model loaded successfully!")
+            st.success("CNN+CBAM+Regression model loaded successfully.")
         else:
             st.warning(f"CNN+CBAM model file not found: {MODEL_HYBRID}")
     except Exception as e:
@@ -205,195 +205,208 @@ def predict_image_hybrid(model, uploaded_file):
         return 0.0, 'unknown'
 
 # --------- STREAMLIT DASHBOARD ---------
-st.set_page_config(page_title="Stenosis Analysis Dashboard", layout="wide")
+st.set_page_config(page_title="ANGIOPLEX — Stenosis Analysis Dashboard", layout="wide")
 st.title("ANGIOPLEX: Angiography Analysis and Stenosis Decision Support Platform")
+st.markdown("---")
 
 df_lookup = load_data()
 cnn_model, hybrid_model = load_models()
 
 col1, col2 = st.columns(2)
 with col1:
-    if cnn_model is not None: st.success("🟢 EfficientNet CNN Model: Ready")
-    else: st.error("🔴 EfficientNet CNN Model: Failed to load")
+    if cnn_model is not None:
+        st.success("EfficientNet CNN Model: Ready")
+    else:
+        st.error("EfficientNet CNN Model: Failed to load")
 with col2:
     if hybrid_model is not None:
-        st.success("🟢 CNN+CBAM+Regression Model: Ready")
-        st.caption("*Using trained CNN+CBAM+Regression model*")
-    else: st.error("🔴 CNN+CBAM+Regression Model: Failed to load")
+        st.success("CNN+CBAM+Regression Model: Ready")
+    else:
+        st.error("CNN+CBAM+Regression Model: Failed to load")
 
-if st.checkbox("Show Model Architectures"):
+if st.checkbox("Show Model Architecture Summaries"):
     col1, col2 = st.columns(2)
     with col1:
         if cnn_model is not None:
-            st.write("### EfficientNet CNN Model Summary")
+            st.write("**EfficientNet CNN — Model Summary**")
             model_summary = []
             cnn_model.summary(print_fn=lambda x: model_summary.append(x))
             st.text('\n'.join(model_summary))
     with col2:
         if hybrid_model is not None:
-            st.write("### CNN+CBAM+Regression Model Summary")
+            st.write("**CNN+CBAM+Regression — Model Summary**")
             model_summary = []
             hybrid_model.summary(print_fn=lambda x: model_summary.append(x))
             st.text('\n'.join(model_summary))
 
-tabs = st.tabs(["📊 EDA (Exploratory Data Analysis)", "🔍 Stenosis Prediction", "📈 Model Information"])
+tabs = st.tabs(["Exploratory Data Analysis", "Stenosis Prediction", "Model Information"])
 
 # --------- TAB 1: EDA ---------
 with tabs[0]:
-    st.subheader("📊 Exploratory Data Analysis (EDA)")
-    st.markdown("**Understanding the dataset used for training both models**")
+    st.subheader("Exploratory Data Analysis")
+    st.markdown("Distribution and statistical summary of the training dataset.")
+
     if not df_lookup.empty:
         col1, col2 = st.columns(2)
         with col1:
-            st.write("### Stenosis Percentage Distribution")
+            st.write("**Stenosis Percentage Distribution**")
             fig, ax = plt.subplots(figsize=(10, 6))
-            ax.hist(df_lookup['stenosis_percentage'], bins=20, color='lightblue', alpha=0.7, edgecolor='black')
+            ax.hist(df_lookup['stenosis_percentage'], bins=20, color='steelblue', alpha=0.8, edgecolor='white')
             ax.set_xlabel('Stenosis Percentage (%)')
             ax.set_ylabel('Frequency')
             ax.set_title('Distribution of Stenosis Percentages')
             ax.grid(True, alpha=0.3)
             mean_val = df_lookup['stenosis_percentage'].mean()
-            ax.axvline(mean_val, color='red', linestyle='--', linewidth=2, label=f'Mean: {mean_val:.1f}%')
+            ax.axvline(mean_val, color='firebrick', linestyle='--', linewidth=1.5, label=f'Mean: {mean_val:.1f}%')
             ax.legend()
             st.pyplot(fig)
+
         with col2:
-            st.write("### Severity Level Distribution")
+            st.write("**Severity Level Distribution**")
             severity_counts = df_lookup['severity'].value_counts()
             fig, ax = plt.subplots(figsize=(10, 6))
-            colors = ['lightgreen', 'yellow', 'orange', 'red', 'darkred']
-            bars = ax.bar(severity_counts.index, severity_counts.values, color=colors[:len(severity_counts)])
+            colors = ['#4CAF50', '#2196F3', '#FF9800', '#F44336', '#9C27B0']
+            bars = ax.bar(severity_counts.index, severity_counts.values, color=colors[:len(severity_counts)], edgecolor='white')
             ax.set_xlabel('Severity Level')
             ax.set_ylabel('Count')
             ax.set_title('Distribution of Severity Levels')
             plt.xticks(rotation=45)
             for bar in bars:
                 height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height, f'{int(height)}', ha='center', va='bottom')
+                ax.text(bar.get_x() + bar.get_width()/2., height, f'{int(height)}', ha='center', va='bottom', fontsize=10)
             plt.tight_layout()
             st.pyplot(fig)
-        st.write("### Dataset Statistics")
+
+        st.write("**Dataset Statistics**")
         col3, col4, col5 = st.columns(3)
         with col3: st.metric("Total Samples", len(df_lookup))
-        with col4: st.metric("Average Stenosis %", f"{df_lookup['stenosis_percentage'].mean():.1f}%")
-        with col5: st.metric("Max Stenosis %", f"{df_lookup['stenosis_percentage'].max():.1f}%")
-        st.write("### Data Insights")
+        with col4: st.metric("Mean Stenosis", f"{df_lookup['stenosis_percentage'].mean():.1f}%")
+        with col5: st.metric("Maximum Stenosis", f"{df_lookup['stenosis_percentage'].max():.1f}%")
+
         col6, col7, col8 = st.columns(3)
-        with col6: st.metric("Min Stenosis %", f"{df_lookup['stenosis_percentage'].min():.1f}%")
-        with col7: st.metric("Std Deviation", f"{df_lookup['stenosis_percentage'].std():.1f}%")
-        with col8: st.metric("Median Stenosis %", f"{df_lookup['stenosis_percentage'].median():.1f}%")
+        with col6: st.metric("Minimum Stenosis", f"{df_lookup['stenosis_percentage'].min():.1f}%")
+        with col7: st.metric("Standard Deviation", f"{df_lookup['stenosis_percentage'].std():.1f}%")
+        with col8: st.metric("Median Stenosis", f"{df_lookup['stenosis_percentage'].median():.1f}%")
 
 # --------- TAB 2: PREDICTION ---------
 with tabs[1]:
-    st.subheader("🔍 Stenosis Prediction & Analysis")
-    st.markdown("**Choose your preferred model and upload an angiography image for analysis**")
+    st.subheader("Stenosis Prediction and Analysis")
+    st.markdown("Select a model and upload a coronary angiography image for automated analysis.")
+
     available_models = []
     if cnn_model is not None: available_models.append("EfficientNet CNN")
     if hybrid_model is not None: available_models.append("CNN + CBAM + Regression")
+
     if not available_models:
-        st.error("❌ No models are available for prediction. Please check your model files.")
+        st.error("No models are available. Please check model files.")
         st.stop()
-    selected_model = st.radio("**Select Model for Prediction:**", available_models, help="Choose between EfficientNet CNN (trained) or CNN+CBAM+Regression")
+
+    selected_model = st.radio("Select Model:", available_models)
+
     if selected_model == "EfficientNet CNN":
-        st.info("🤖 **EfficientNet CNN**: Pre-trained model optimized for medical image analysis - for reliable predictions")
+        st.info("EfficientNet CNN — Pre-trained on ImageNet, fine-tuned for stenosis regression. Recommended for reliable predictions.")
     else:
-        st.info("🧠 **CNN+CBAM+Regression**: Recommended Trained attention-based model with CBAM modules")
+        st.info("CNN + CBAM + Regression — Custom architecture with channel and spatial attention. Produces both stenosis percentage and severity classification.")
+
     uploaded_file = st.file_uploader("Upload Angiography Image", type=["jpg", "jpeg", "png"])
+
     if uploaded_file is not None:
         col1, col2 = st.columns([1, 2])
         with col1:
             st.image(uploaded_file, caption="Uploaded Image", width=300)
             img_details = Image.open(uploaded_file)
-            st.write(f"**Image Size:** {img_details.size}")
-            st.write(f"**Image Mode:** {img_details.mode}")
+            st.write(f"**Dimensions:** {img_details.size[0]} x {img_details.size[1]} px")
+            st.write(f"**Mode:** {img_details.mode}")
+
         with col2:
-            if st.button("🔍 Analyze Image", type="primary", use_container_width=True):
-                with st.spinner(f"Analyzing image with {selected_model} model..."):
+            if st.button("Analyze Image", type="primary", use_container_width=True):
+                with st.spinner(f"Running inference with {selected_model}..."):
                     if selected_model == "EfficientNet CNN":
                         stenosis_perc, severity = predict_image_cnn(cnn_model, uploaded_file)
                     else:
                         stenosis_perc, severity = predict_image_hybrid(hybrid_model, uploaded_file)
+
                 if severity != 'unknown':
-                    st.success(f"📈 **Predicted Stenosis: {stenosis_perc:.2f}%**")
-                    st.info(f"🩺 **Severity Level: {severity.capitalize()}**")
-                    st.caption(f"*Prediction made using: {selected_model}*")
-                    st.write("**Stenosis Level Visualization:**")
-                    st.progress(min(stenosis_perc/100, 1.0))
-                    if severity == 'minimal': st.success(f"🟢 **{severity.upper()}** stenosis detected")
-                    elif severity == 'mild': st.info(f"🔵 **{severity.upper()}** stenosis detected")
-                    elif severity == 'moderate': st.warning(f"🟡 **{severity.upper()}** stenosis detected")
-                    elif severity == 'severe': st.error(f"🟠 **{severity.upper()}** stenosis detected")
-                    else: st.error(f"🔴 **{severity.upper()}** stenosis detected")
+                    st.markdown("---")
+                    st.write("**Prediction Results**")
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.metric("Predicted Stenosis", f"{stenosis_perc:.2f}%")
+                    with col_b:
+                        st.metric("Severity Classification", severity.capitalize())
+
+                    st.write("**Stenosis Severity Scale**")
+                    st.progress(min(stenosis_perc / 100, 1.0))
+                    st.caption(f"Predicted stenosis: {stenosis_perc:.1f}%  |  Model: {selected_model}")
+
+                    severity_labels = {
+                        'minimal': 'Minimal stenosis — routine monitoring recommended.',
+                        'mild': 'Mild stenosis — lifestyle modification and medication indicated.',
+                        'moderate': 'Moderate stenosis — close monitoring and possible intervention.',
+                        'severe': 'Severe stenosis — intervention likely required.',
+                        'critical': 'Critical stenosis — urgent clinical review indicated.'
+                    }
+                    st.info(severity_labels.get(severity, ''))
+
                     treatment = get_treatment_recommendation(df_lookup, severity)
                     if treatment is not None:
                         st.markdown("---")
-                        st.subheader("💊 Recommended Treatment Plan")
+                        st.write("**Evidence-Based Treatment Recommendation**")
                         col3, col4 = st.columns(2)
                         with col3:
-                            st.markdown(f"**🎯 Treatment Strategy:** {treatment['treatment_strategy']}")
-                            st.markdown(f"**⚡ Urgency Level:** {treatment['urgency_level']}")
-                            st.markdown(f"**🏥 Intervention Type:** {treatment['intervention_type']}")
-                            st.markdown(f"**💊 Medication Intensity:** {treatment['medication_intensity']}")
+                            st.write(f"**Treatment Strategy:** {treatment['treatment_strategy']}")
+                            st.write(f"**Urgency Level:** {treatment['urgency_level']}")
+                            st.write(f"**Intervention Type:** {treatment['intervention_type']}")
+                            st.write(f"**Medication Intensity:** {treatment['medication_intensity']}")
                         with col4:
-                            st.markdown(f"**📅 Next Follow-up:** {treatment['next_follow_up']}")
-                            st.markdown(f"**🏃 Lifestyle Changes:** {treatment['lifestyle_summary']}")
-                            st.markdown(f"**🔬 Lab Monitoring:** {treatment['lab_monitoring_summary']}")
+                            st.write(f"**Next Follow-up:** {treatment['next_follow_up']}")
+                            st.write(f"**Lifestyle Modification:** {treatment['lifestyle_summary']}")
+                            st.write(f"**Laboratory Monitoring:** {treatment['lab_monitoring_summary']}")
+
                     st.markdown("---")
-                    st.error("⚠️ **IMPORTANT MEDICAL DISCLAIMER:** This AI analysis is for educational and research purposes only. It should NOT be used as a substitute for professional medical diagnosis or treatment. Always consult qualified healthcare professionals for medical decisions.")
+                    st.warning("MEDICAL DISCLAIMER: This system is intended for research and educational purposes only. It does not constitute medical advice and must not be used as a substitute for professional clinical diagnosis or treatment. All outputs should be reviewed by a qualified healthcare professional.")
                 else:
-                    st.error("❌ Failed to analyze the image. Please ensure the image is clear and try again.")
-                    st.info("💡 **Tips:** Make sure the image is a clear angiography scan with good contrast.")
+                    st.error("Prediction failed. Please verify the image quality and format.")
 
 # --------- TAB 3: MODEL INFO ---------
 with tabs[2]:
-    st.subheader("📈 Model Information & Comparison")
-    st.write("### Model Comparison")
-    comparison_data = {
-        "Feature": ["Architecture Base", "Attention Mechanism", "Output Type", "Training Status", "Best Use Case", "Computational Complexity"],
-        "EfficientNet CNN": ["EfficientNetB0 (Pre-trained)", "None", "Single regression output", "Fully trained", "Fast, reliable predictions", "Low"],
-        "CNN + CBAM + Regression": ["Custom CNN with CBAM", "Channel + Spatial Attention", "Dual output (regression + classification)", "Fully Trained", "Advanced feature extraction", "High"]
-    }
-    comparison_df = pd.DataFrame(comparison_data)
+    st.subheader("Model Information and Comparison")
+
+    st.write("**Architectural Comparison**")
+    comparison_df = pd.DataFrame({
+        "Feature": ["Base Architecture", "Attention Mechanism", "Output Type", "Training Status", "Primary Use Case", "Computational Cost"],
+        "EfficientNet CNN": ["EfficientNetB0 (ImageNet pre-trained)", "None", "Regression (stenosis %)", "Fully trained", "Fast, reliable inference", "Low"],
+        "CNN + CBAM + Regression": ["Custom CNN (4 blocks)", "Channel + Spatial (CBAM)", "Regression + Classification", "Fully trained", "Attention-based analysis", "Moderate"]
+    })
     st.table(comparison_df)
 
     col1, col2 = st.columns(2)
     with col1:
-        st.write("### 🔵 EfficientNet CNN Model")
+        st.write("**EfficientNet CNN**")
         st.write("""
-        **Architecture Features:**
-        - Based on EfficientNetB0 architecture
-        - Pre-trained on ImageNet, fine-tuned for stenosis
-        - Compound scaling for optimal efficiency
-        - Single regression head for stenosis percentage
-
-        **Technical Specs:**
-        - Input: 224×224×3 Gray Scale images
-        - Output: Single stenosis percentage (0-100%)
-        - Parameters: ~5.3M (EfficientNetB0 base)
+        - EfficientNetB0 backbone, pre-trained on ImageNet
+        - Fine-tuned for coronary stenosis regression
+        - Input: 224 x 224 x 3
+        - Output: Continuous stenosis percentage (0–100%)
+        - Approximately 5.3M parameters
         """)
     with col2:
-        st.write("### 🧠 CNN + CBAM + Regression Model")
+        st.write("**CNN + CBAM + Regression**")
         st.write("""
-        **Architecture Features:**
-        - Custom CNN with 4 convolutional blocks
-        - CBAM (Convolutional Block Attention Module)
-        - Channel attention for feature importance
-        - Spatial attention for location focus
-        - Dual output heads (regression + classification)
-
-        **Technical Specs:**
-        - Input: 224×224×3 Gray Scale images
-        - Output: Stenosis % + Severity classification
-        - Attention: Channel + Spatial CBAM blocks
+        - Custom CNN: four convolutional blocks (64, 128, 256, 512 filters)
+        - CBAM applied after each block (channel + spatial attention)
+        - Input: 224 x 224 x 3
+        - Output: Stenosis percentage + severity class (5 categories)
+        - Dual-head architecture with shared feature extractor
         """)
 
-    # ---- ALL GRAPH PATHS (merged from both versions) ----
-    st.write("### Training Performance Comparison")
+    st.markdown("---")
+    st.write("**Training Performance**")
 
     cnn_acc_path   = os.path.join(GRAPH_PATH, "cnn_accuracy_curve.png")
     cnn_loss_path  = os.path.join(GRAPH_PATH, "cnn_loss_curve.png")
     cnn_cm_path    = os.path.join(GRAPH_PATH, "CNN Confusion Matrix.jpg")
     cnn_roc_path   = os.path.join(GRAPH_PATH, "CNN AUC-ROC Curve.jpg")
-
     cbam_acc_path  = os.path.join(GRAPH_PATH, "cnn_cbam_accuracy_curve.png")
     cbam_loss_path = os.path.join(GRAPH_PATH, "cnn_cbam_loss_curve.png")
     cbam_mae_path  = os.path.join(GRAPH_PATH, "cnn_cbam_mae_curve.png")
@@ -403,81 +416,85 @@ with tabs[2]:
     all_paths = [cnn_acc_path, cnn_loss_path, cnn_cm_path, cnn_roc_path,
                  cbam_acc_path, cbam_loss_path, cbam_mae_path, cbam_cm_path, cbam_roc_path]
 
-    # EfficientNet CNN training curves
     if os.path.exists(cnn_acc_path) or os.path.exists(cnn_loss_path):
-        st.markdown("#### 📈 EfficientNet CNN Training Results")
+        st.write("*EfficientNet CNN — Training Curves*")
         col1, col2 = st.columns(2)
         with col1:
             if os.path.exists(cnn_acc_path):
-                st.image(Image.open(cnn_acc_path), caption="EfficientNet CNN - Training Accuracy")
+                st.image(Image.open(cnn_acc_path), caption="EfficientNet CNN — Accuracy")
         with col2:
             if os.path.exists(cnn_loss_path):
-                st.image(Image.open(cnn_loss_path), caption="EfficientNet CNN - Training Loss")
+                st.image(Image.open(cnn_loss_path), caption="EfficientNet CNN — Loss")
 
-    # EfficientNet CNN evaluation
     if os.path.exists(cnn_cm_path) or os.path.exists(cnn_roc_path):
-        st.markdown("#### 🎯 EfficientNet CNN Evaluation Results")
+        st.write("*EfficientNet CNN — Evaluation Metrics*")
         col1, col2 = st.columns(2)
         with col1:
             if os.path.exists(cnn_cm_path):
-                st.image(Image.open(cnn_cm_path), caption="EfficientNet CNN - Confusion Matrix", use_container_width=True)
+                st.image(Image.open(cnn_cm_path), caption="EfficientNet CNN — Confusion Matrix", use_container_width=True)
         with col2:
             if os.path.exists(cnn_roc_path):
-                st.image(Image.open(cnn_roc_path), caption="EfficientNet CNN - AUC-ROC Curve", use_container_width=True)
+                st.image(Image.open(cnn_roc_path), caption="EfficientNet CNN — ROC Curve", use_container_width=True)
 
-    # CNN+CBAM training curves
     if os.path.exists(cbam_acc_path) or os.path.exists(cbam_loss_path):
-        st.markdown("#### 📈 CNN+CBAM+Regression Training Results")
+        st.write("*CNN + CBAM + Regression — Training Curves*")
         col1, col2 = st.columns(2)
         with col1:
             if os.path.exists(cbam_acc_path):
-                st.image(Image.open(cbam_acc_path), caption="CNN+CBAM - Training Accuracy")
+                st.image(Image.open(cbam_acc_path), caption="CNN+CBAM — Accuracy")
         with col2:
             if os.path.exists(cbam_loss_path):
-                st.image(Image.open(cbam_loss_path), caption="CNN+CBAM - Training Loss")
+                st.image(Image.open(cbam_loss_path), caption="CNN+CBAM — Loss")
 
-    # CNN+CBAM evaluation
     if os.path.exists(cbam_cm_path) or os.path.exists(cbam_roc_path):
-        st.markdown("#### 🎯 CNN+CBAM Evaluation Results")
+        st.write("*CNN + CBAM + Regression — Evaluation Metrics*")
         col1, col2 = st.columns(2)
         with col1:
             if os.path.exists(cbam_cm_path):
-                st.image(Image.open(cbam_cm_path), caption="CNN+CBAM - Confusion Matrix", use_container_width=True)
+                st.image(Image.open(cbam_cm_path), caption="CNN+CBAM — Confusion Matrix", use_container_width=True)
         with col2:
             if os.path.exists(cbam_roc_path):
-                st.image(Image.open(cbam_roc_path), caption="CNN+CBAM - AUC-ROC Curve", use_container_width=True)
+                st.image(Image.open(cbam_roc_path), caption="CNN+CBAM — ROC Curve", use_container_width=True)
 
-    # MAE curve
     if os.path.exists(cbam_mae_path):
-        st.markdown("#### 📈 CNN+CBAM Mean Absolute Error")
-        st.image(Image.open(cbam_mae_path), caption="CNN+CBAM - Mean Absolute Error Over Training")
+        st.write("*CNN + CBAM + Regression — Regression Performance*")
+        st.image(Image.open(cbam_mae_path), caption="CNN+CBAM — Mean Absolute Error")
 
     if not any(os.path.exists(p) for p in all_paths):
-        st.info("📊 Training history graphs not found. Please ensure your graph files are in the graphs/ folder.")
+        st.info("Training graphs not found. Ensure graph files are present in the graphs/ directory.")
 
 # --------- SIDEBAR ---------
 with st.sidebar:
-    st.header("🔍 Quick Model Guide")
-    st.write("### Model Selection Tips:")
-    st.info("""
-    **EfficientNet CNN:**
-    ✅ Use for reliable predictions
-    ✅ Faster processing
-    ✅ Production-ready
-
-    **CNN+CBAM+Regression:**
-    ✅ Advanced feature extraction
-    ✅ Shows advanced attention features
-    """)
-    st.write("### Severity Levels:")
-    st.success("🟢 **Minimal:** < 30%")
-    st.info("🔵 **Mild:** 30-50%")
-    st.warning("🟡 **Moderate:** 50-70%")
-    st.error("🟠 **Severe:** 70-85%")
-    st.error("🔴 **Critical:** > 85%")
-    st.write("### Dataset Info:")
-    if not df_lookup.empty:
-        st.metric("Training Samples", len(df_lookup))
-        st.metric("Avg Stenosis", f"{df_lookup['stenosis_percentage'].mean():.1f}%")
+    st.header("ANGIOPLEX")
+    st.markdown("Angiography Analysis and Stenosis Decision Support Platform")
     st.markdown("---")
-    st.caption("⚠️ For educational use only. Consult medical professionals for diagnosis.")
+
+    st.write("**Model Guide**")
+    st.write("""
+    **EfficientNet CNN**
+    Recommended for fast, reliable stenosis percentage prediction.
+
+    **CNN + CBAM + Regression**
+    Recommended for attention-guided analysis with dual output (percentage + severity class).
+    """)
+
+    st.markdown("---")
+    st.write("**Severity Classification Thresholds**")
+    st.write("""
+    | Severity  | Stenosis Range |
+    |-----------|---------------|
+    | Minimal   | < 30%         |
+    | Mild      | 30 – 50%      |
+    | Moderate  | 50 – 70%      |
+    | Severe    | 70 – 85%      |
+    | Critical  | > 85%         |
+    """)
+
+    if not df_lookup.empty:
+        st.markdown("---")
+        st.write("**Dataset Summary**")
+        st.metric("Total Samples", len(df_lookup))
+        st.metric("Mean Stenosis", f"{df_lookup['stenosis_percentage'].mean():.1f}%")
+
+    st.markdown("---")
+    st.caption("For research and educational use only. Not for clinical deployment.")
